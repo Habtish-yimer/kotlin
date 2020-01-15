@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.backend.common.phaser.makeIrFilePhase
 import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
 import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
+import org.jetbrains.kotlin.backend.jvm.codegen.mapClass
 import org.jetbrains.kotlin.backend.jvm.ir.eraseTypeParameters
 import org.jetbrains.kotlin.backend.jvm.ir.hasJvmDefault
 import org.jetbrains.kotlin.codegen.AsmUtil
@@ -110,10 +111,13 @@ private class BridgeLowering(val context: JvmBackendContext) : ClassLoweringPass
             val resolved = irFunction.findConcreteSuperDeclaration()!!
             val resolvedSignature = resolved.getJvmSignature()
             if (!resolvedSignature.sameCallAs(ourSignature)) {
-                val bridge = createBridgeHeader(irClass, resolved, irFunction, isSpecial = false, isSynthetic = false)
-                bridge.createBridgeBody(resolved, null, isSpecial = false, invokeStatically = true)
-                irClass.declarations.add(bridge)
-                targetForCommonBridges = bridge
+                val adjustedTarget = adjustTarget(resolved, irFunction)
+                if (adjustedTarget != null) {
+                    val bridge = createBridgeHeader(irClass, resolved, irFunction, isSpecial = false, isSynthetic = false)
+                    bridge.createBridgeBody(adjustedTarget, null, invokeStatically = true)
+                    irClass.declarations.add(bridge)
+                    targetForCommonBridges = bridge
+                }
             }
         } else if (irFunction.origin == IrDeclarationOrigin.FAKE_OVERRIDE &&
             irFunction.modality == Modality.ABSTRACT &&
@@ -196,7 +200,7 @@ private class BridgeLowering(val context: JvmBackendContext) : ClassLoweringPass
         if (signature in signaturesToSkip) return
 
         val bridge = createBridgeHeader(irClass, target, method, isSpecial = isSpecial, isSynthetic = !isSpecial)
-        bridge.createBridgeBody(target, specialOverrideInfo, isSpecial)
+        bridge.createBridgeBody(target, specialOverrideInfo)
         irClass.declarations.add(bridge)
 
         // For lambda classes, we move override from the `invoke` function to its bridge. This will allow us to avoid boxing
@@ -339,13 +343,23 @@ private class BridgeLowering(val context: JvmBackendContext) : ClassLoweringPass
         if (variableMap.isNotEmpty()) {
             body?.transform(VariableRemapper(variableMap), null)
         }
+    }
 
+    // If a special bridge target is an interface default function, we should call
+    // an intermediate class if it exists.
+    // If it does not exist, the best we can do is generate no bridge at all.
+    private fun adjustTarget(target: IrSimpleFunction, source: IrSimpleFunction): IrSimpleFunction? {
+        if (!target.parentAsClass.isInterface) {
+            return target
+        }
+        return source.overriddenSymbols.singleOrNull {
+            it.owner.modality != Modality.ABSTRACT && !it.owner.parentAsClass.isInterface
+        }?.owner
     }
 
     private fun IrSimpleFunction.createBridgeBody(
         target: IrSimpleFunction,
         specialMethodInfo: SpecialMethodWithDefaultInfo?,
-        isSpecial: Boolean,
         invokeStatically: Boolean = false
     ) {
         context.createIrBuilder(symbol).run {
@@ -456,7 +470,11 @@ private class BridgeLowering(val context: JvmBackendContext) : ClassLoweringPass
     private inner class FunctionHandleForIrFunction(val irFunction: IrSimpleFunction) : FunctionHandle {
         override val isDeclaration get() = irFunction.origin != IrDeclarationOrigin.FAKE_OVERRIDE
         override val isAbstract get() = irFunction.modality == Modality.ABSTRACT
-        override val mayBeUsedAsSuperImplementation get() = !irFunction.parentAsClass.isInterface || irFunction.hasJvmDefault()
+        override val mayBeUsedAsSuperImplementation
+            get() =
+                !irFunction.parentAsClass.isInterface ||
+                        irFunction.hasJvmDefault() ||
+                        (irFunction.modality != Modality.ABSTRACT && irFunction.comesFromJava())
 
         override fun getOverridden() = irFunction.overriddenSymbols.map { FunctionHandleForIrFunction(it.owner) }
 
@@ -478,6 +496,11 @@ private class BridgeLowering(val context: JvmBackendContext) : ClassLoweringPass
 
     private fun IrFunction.getJvmSignature(): Method = methodSignatureMapper.mapAsmMethod(this)
     private fun IrFunction.getJvmName(): String = getJvmSignature().name
+    private fun IrClass.getJvmName(): String = context.typeMapper.mapClass(this).className
+
+    fun IrDeclaration.comesFromJava() =
+        parentAsClass.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB || parentAsClass.getJvmName().startsWith("java.")
+
 }
 
 private data class SignatureWithSource(val signature: Method, val source: IrSimpleFunction) {
@@ -498,8 +521,6 @@ fun IrSimpleFunction.isCollectionStub(): Boolean =
     origin == IrDeclarationOrigin.IR_BUILTINS_STUB
 
 val EXTERNAL_ORIGIN = setOf(IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB, IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB)
-
-fun IrDeclaration.comesFromJava() = parentAsClass.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
 fun IrDeclaration.isExternalDeclaration() = parentAsClass.origin in EXTERNAL_ORIGIN
 

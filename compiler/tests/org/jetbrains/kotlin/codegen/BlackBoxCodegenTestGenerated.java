@@ -14943,6 +14943,11 @@ public class BlackBoxCodegenTestGenerated extends AbstractBlackBoxCodegenTest {
             runTest("compiler/testData/codegen/box/jdk/kt1397.kt");
         }
 
+        @TestMetadata("mapImpl.kt")
+        public void testMapImpl() throws Exception {
+            runTest("compiler/testData/codegen/box/jdk/mapImpl.kt");
+        }
+
         @TestMetadata("removeIf.kt")
         public void testRemoveIf() throws Exception {
             runTest("compiler/testData/codegen/box/jdk/removeIf.kt");
