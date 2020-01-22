@@ -152,30 +152,6 @@ public class Long internal constructor(
     public inline operator fun div(other: Double): Double = toDouble() / other
 
     /** Calculates the remainder of dividing this value by the other value. */
-    @Deprecated("Use rem(other) instead", ReplaceWith("rem(other)"), DeprecationLevel.WARNING)
-    public inline operator fun mod(other: Byte): Long = rem(other)
-
-    /** Calculates the remainder of dividing this value by the other value. */
-    @Deprecated("Use rem(other) instead", ReplaceWith("rem(other)"), DeprecationLevel.WARNING)
-    public inline operator fun mod(other: Short): Long = rem(other)
-
-    /** Calculates the remainder of dividing this value by the other value. */
-    @Deprecated("Use rem(other) instead", ReplaceWith("rem(other)"), DeprecationLevel.WARNING)
-    public inline operator fun mod(other: Int): Long = rem(other)
-
-    /** Calculates the remainder of dividing this value by the other value. */
-    @Deprecated("Use rem(other) instead", ReplaceWith("rem(other)"), DeprecationLevel.WARNING)
-    public inline operator fun mod(other: Long): Long = rem(other)
-
-    /** Calculates the remainder of dividing this value by the other value. */
-    @Deprecated("Use rem(other) instead", ReplaceWith("rem(other)"), DeprecationLevel.WARNING)
-    public inline operator fun mod(other: Float): Float = rem(other)
-
-    /** Calculates the remainder of dividing this value by the other value. */
-    @Deprecated("Use rem(other) instead", ReplaceWith("rem(other)"), DeprecationLevel.WARNING)
-    public inline operator fun mod(other: Double): Double = rem(other)
-
-    /** Calculates the remainder of dividing this value by the other value. */
     @SinceKotlin("1.1")
     public inline operator fun rem(other: Byte): Long = rem(other.toLong())
 
