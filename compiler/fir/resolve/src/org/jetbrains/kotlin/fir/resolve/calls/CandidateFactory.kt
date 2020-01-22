@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.resolve.calls.inference.model.ConstraintStorage
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 
 class CandidateFactory private constructor(
-    private val bodyResolveComponents: BodyResolveComponents,
+    val bodyResolveComponents: BodyResolveComponents,
     val callInfo: CallInfo,
     private val baseSystem: ConstraintStorage
 ) {

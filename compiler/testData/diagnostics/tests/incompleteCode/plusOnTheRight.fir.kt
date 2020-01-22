@@ -7,5 +7,5 @@ class MyClass1 {
 }
 
 fun main(arg: MyClass1) {
-    arg<!INAPPLICABLE_CANDIDATE!>+<!><!SYNTAX!><!>
+    arg<!UNRESOLVED_REFERENCE!>+<!><!SYNTAX!><!>
 }
