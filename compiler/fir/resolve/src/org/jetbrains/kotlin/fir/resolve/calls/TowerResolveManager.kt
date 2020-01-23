@@ -56,12 +56,12 @@ class TowerResolveManager internal constructor(private val towerResolver: FirTow
         ) {
             // Check explicit extension receiver for default package members
             if (symbol is FirNamedFunctionSymbol && dispatchReceiverValue == null &&
-                implicitExtensionReceiverValue == null &&
-                explicitReceiver != null && explicitReceiver !is FirResolvedQualifier &&
+                (implicitExtensionReceiverValue == null) != (explicitReceiver == null) &&
+                explicitReceiver !is FirResolvedQualifier &&
                 symbol.callableId.packageName.startsWith(defaultPackage)
             ) {
-                val extensionReceiver = explicitReceiver
-                val extensionReceiverType = extensionReceiver.typeRef.coneTypeSafe<ConeClassLikeType>()
+                val extensionReceiverType = explicitReceiver?.typeRef?.coneTypeSafe()
+                    ?: implicitExtensionReceiverValue?.type as? ConeClassLikeType
                 if (extensionReceiverType != null) {
                     val declarationReceiverTypeRef =
                         (symbol as? FirCallableSymbol<*>)?.fir?.receiverTypeRef as? FirResolvedTypeRef
