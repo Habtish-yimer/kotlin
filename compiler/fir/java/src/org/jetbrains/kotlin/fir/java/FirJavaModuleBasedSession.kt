@@ -103,9 +103,9 @@ class FirLibrarySession private constructor(
                         javaClassFinder,
                         kotlinScopeProvider
                     ),
-                    FirBuiltinSymbolProvider(this, kotlinScopeProvider),
                     javaSymbolProvider,
-                    FirDependenciesSymbolProviderImpl(this)
+                    FirDependenciesSymbolProviderImpl(this),
+                    FirBuiltinSymbolProvider(this, kotlinScopeProvider)
                 )
             ) as FirSymbolProvider
         )
