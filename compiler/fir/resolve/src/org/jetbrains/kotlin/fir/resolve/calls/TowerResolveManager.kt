@@ -268,8 +268,8 @@ class TowerResolveManager internal constructor(private val towerResolver: FirTow
         group: TowerGroup,
         explicitReceiverKind: ExplicitReceiverKind = ExplicitReceiverKind.NO_EXPLICIT_RECEIVER
     ) {
-        if (group <= this.group) {
-            throw AssertionError("Incorrect level processing order (c) Mikhail Glukhikh")
+        assert(group > this.group) {
+            "Incorrect TowerGroup processing order (c) Mikhail Glukhikh"
         }
         this.group = group
         with(LevelHandler(callInfo, explicitReceiverKind, resultCollector, group)) {
